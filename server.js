@@ -1,5 +1,5 @@
 // process.env.NODE_ENV = 'test';
-require('./config/config');
+require("./config");
 
 var firebase = require("firebase");
 const path = require('path');
@@ -104,14 +104,29 @@ app.post(root + '/signout', (req, res) => {
         // Sign-out successful.
         res.redirect('/');
     }).catch(function (error) {
-        // An error happened.
+        // An error happened
+        console.log(error);
+        res.redirect('/');
     });
 });
 
-app.get(root + '/notlogin', (req, res) => {
+app.get(root + '/liveRoom', (req, res) => {
+    // var userinfo = getUserInfo();
+    // // res.render('signout.ejs');
+    // var database = firebase.database();
+    // var userId = userinfo.uid;
+    // var roomID = 1;
+    // firebase.database().ref('chats/' + roomID).set({
+    //     username: '123',
+    //     email: '456',
+    //   });
+
+    // var starCountRef = firebase.database().ref('users/' + userId);
+      
     var userinfo = getUserInfo();
-    res.render('notlogin.ejs', {userinfo: JSON.stringify(userinfo) });
+    res.render('liveRoom.ejs', { userinfo: JSON.stringify(userinfo) });
 });
+
 
 function getUserInfo() {
     var userinfo = {};
