@@ -2,7 +2,7 @@
   "name": "livechat_lap",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,6 +15,9 @@
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "firebase": "^5.5.2",
-    "jquery": "^3.3.1"
+    "handlebars": "^4.0.12",
+    "jquery": "^3.3.1",
+    "semantic-ui-css": "^2.4.1",
+    "simplewebrtc": "^3.0.2"
   }
 }

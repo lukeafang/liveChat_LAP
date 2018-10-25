@@ -1,21 +1,22 @@
 // process.env.NODE_ENV = 'test';
 require("./config");
 
-var firebase = require("firebase");
+// var firebase = require("firebase");
 const path = require('path');
 var express = require('express');
 var app = express();
 const bodyParser = require('body-parser');
 require("babel-polyfill");
 
-var config_firebase = {
-    apiKey: process.env.firebase_apiKey,
-    authDomain: process.env.firebase_authDomain,
-    databaseURL: process.env.firebase_databaseURL,
-    storageBucket: process.env.firebase_storageBucket,
-};
 
-firebase.initializeApp(config_firebase);
+// var config_firebase = {
+//     apiKey: process.env.firebase_apiKey,
+//     authDomain: process.env.firebase_authDomain,
+//     databaseURL: process.env.firebase_databaseURL,
+//     storageBucket: process.env.firebase_storageBucket,
+// };
+
+// firebase.initializeApp(config_firebase);
 
 const port = process.env.PORT;
 
@@ -25,6 +26,9 @@ app.set('view engine', 'ejs');
 var root = '/LAP';
 // Set static folder.
 app.use(root, express.static(path.join(__dirname, '/views')));
+
+// Provide access to node_modules folder from the client-side
+app.use('/scripts', express.static(`${__dirname}/node_modules/`));
 
 // Body parser middleware.
 app.use(bodyParser.json());			// to support JSON-encoded bodies
@@ -40,74 +44,18 @@ app.get('/', (req, res) => {
 //DashBoard
 app.get(root, (req, res) => {
     //check login or not
-    var userinfo = getUserInfo();
-    res.render("dashboard.ejs", { userinfo: JSON.stringify(userinfo) });
+    // var userinfo = getUserInfo();
+    // res.render("dashboard.ejs", { userinfo: JSON.stringify(userinfo) });
+    res.render("dashboard.ejs");
+});
+
+
+app.get(root + '/signIn', (req, res) => {
+    res.render('signin.ejs');
 });
 
 app.get(root + '/signup', (req, res) => {
-    var userinfo = getUserInfo();
-    res.render('signup.ejs', { userinfo: JSON.stringify(userinfo) });
-});
-
-app.post(root + '/signup', (req, res) => {
-    var redirect = '/LAP';
-    var errorMessage = '';   
-    var name = req.body.name;
-    var email = req.body.email;
-    var password = req.body.password;
-    firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(function (user) {
-            var user = firebase.auth().currentUser;
-            user.updateProfile({
-                displayName: name
-            }).then(function() {
-                // Update successful.
-                res.json({ errorMessage: errorMessage, redirect:redirect});
-            });
-        }, function (error) {
-            // Handle Errors here.
-            var errorCode = error.code;
-            errorMessage = `${error.message}\n Code: ${errorCode}`;
-            res.json({ errorMessage: errorMessage, redirect:redirect});
-        });
-});
-
-app.get(root + '/signIn', (req, res) => {
-    var userinfo = getUserInfo();
-    res.render('signin.ejs', { userinfo: JSON.stringify(userinfo) });
-});
-
-app.post(root + '/signIn', (req, res) => {
-    var redirect = '/LAP';
-    var errorMessage = '';
-    var email = req.body.email;
-    var password = req.body.password;
-    firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(function (user) {
-            res.json({ errorMessage: errorMessage, redirect:redirect});
-        })
-        .catch(function (error) {
-            // Handle Errors here.
-            var errorCode = error.code;
-            errorMessage = `${error.message}\n Code: ${errorCode}`;
-            res.json({ errorMessage: errorMessage, redirect:redirect});
-        });
-});
-
-app.get(root + '/signout', (req, res) => {
-    var userinfo = getUserInfo();
-    res.render('signout.ejs');
-});
-
-app.post(root + '/signout', (req, res) => {
-    firebase.auth().signOut().then(function () {
-        // Sign-out successful.
-        res.redirect('/');
-    }).catch(function (error) {
-        // An error happened
-        console.log(error);
-        res.redirect('/');
-    });
+    res.render('signup.ejs');
 });
 
 app.get(root + '/liveRoom', (req, res) => {
@@ -122,28 +70,15 @@ app.get(root + '/liveRoom', (req, res) => {
     //   });
 
     // var starCountRef = firebase.database().ref('users/' + userId);
-      
-    var userinfo = getUserInfo();
-    res.render('liveRoom.ejs', { userinfo: JSON.stringify(userinfo) });
+    
+    res.render('liveRoom.ejs');
+});
+
+app.get(root + '/notLogin', (req,res) => {
+    res.render('notLogin.ejs');
 });
 
 
-function getUserInfo() {
-    var userinfo = {};
-    var user = firebase.auth().currentUser;
-    if (user) {
-        // User is signed in.
-        userinfo.isLogin = true;
-        userinfo.name = user.displayName;
-        userinfo.email = user.email;
-        userinfo.uid = user.uid;
-    } else {
-        // No user is signed in.
-        userinfo.isLogin = false;
-    }
-
-    return userinfo;
-}
 
 
 app.listen(port, () => {
