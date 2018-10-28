@@ -29,3 +29,5 @@ node_modules
 
 config/config\.js
 # config\.js
+
+serviceAccountKey\.json
