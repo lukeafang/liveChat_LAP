@@ -1,0 +1,246 @@
+<!-- view/dashboard.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Room</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+
+    <!-- Custom styles for navbar page -->
+    <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
+    <link href="../assets/css/nav.css" rel="stylesheet">
+
+    <script src="/scripts/simplewebrtc/out/simplewebrtc-with-adapter.bundle.js"></script>
+
+
+    <link rel="stylesheet" href="/scripts/semantic-ui-css/semantic.min.css">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css" integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns"
+        crossorigin="anonymous">
+
+    <style>
+        #remoteVideos video {
+            height: 300px;
+        }
+
+        #localVideo {
+            height: 300px;
+        }
+
+        #chat-content {
+            height: 300px;
+            overflow-y: scroll;
+        }
+
+        #chat-action {
+            height: 400px;
+        }
+    </style>
+</head>
+<script>
+    var roomIndex = '<%- roomIndex %>';
+    var roomName = '<%- roomName %>';
+    var roomJoinID = '<%- roomJoinID %>';
+    var speakerName = '<%- speakerName %>';
+    var createNewRoom = <%- createNewRoom %>;
+    // console.log(createNewRoom);
+    // var autoEnableCamera = createNewRoom;
+    var localMedia = { audio: createNewRoom, video: createNewRoom };
+</script>
+
+<body>
+    <% include nav %>
+
+    <div class="container">
+
+
+
+        <button class="btn btn-danger" style="margin-bottom:5px" id="leaveRoomBtn">Leave <i class="fas fa-sign-out-alt"></i></button>
+        <div class="row">
+            <div class="col-sm-5">
+                <div class="alert alert-primary text-center" role="alert">
+                    Room Name: <p id="roomName"></p>
+                </div>
+                <div id="localVideos">
+                    <!-- <video id="localVideo" class="localVideo_class"></video> -->
+                </div>
+                <div id="remoteVideos">
+                </div>
+            </div>
+
+            <div class="col-sm-5">
+                <div class="alert alert-secondary text-center" role="alert">
+                    Messages
+                </div>
+                <div id="chat-content">
+
+                </div>
+                <div class="input-group" style="width:95%">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Message: </span>
+                    </div>
+                    <textarea class="form-control" aria-label="With textarea" rows="1"></textarea>
+                </div>
+            </div>
+            <div class="col">
+                <div class="alert alert-success text-center" role="alert">
+                    items
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% include footer %>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+</body>
+
+<script>
+    var webrtc = new SimpleWebRTC({
+        // the id/element dom element that will hold "our" video
+        localVideoEl: 'localVideo',
+        // the id/element dom element that will hold remote videos
+        remoteVideosEl: 'remoteVideos',
+        // immediately ask for camera access
+        autoRequestMedia: false,
+        media: localMedia
+
+    });
+
+    // we have to wait until it's ready
+    webrtc.on('readyToCall', function () {
+        console.log('readyToCall');
+
+        // you can name it anything
+        // webrtc.joinRoom(roomName);
+        // var str = `joined room ${roomName}`;
+        // console.log(str);
+    });
+
+    $(document).ready(function () {
+        // console.log(roomName);
+
+        $('#roomName').text(roomName);
+
+
+    });
+
+    // Remote video was added
+    webrtc.on('videoAdded', (video, peer) => {
+        // eslint-disable-next-line no-console
+        console.log('videoAdded');
+
+
+        const id = webrtc.getDomId(peer);
+        console.log(id);
+
+        // $('.remoteVideos_class').attr('id', id);
+
+
+        var insertStr = '';
+        insertStr = `<div id="${id}" class="remoteVideo_class">`;
+        insertStr += `</div>`;
+        $('#remoteVideos').append(insertStr);
+
+        webrtc.startLocalVideo();
+
+
+    });
+
+    // Remote video was added
+    webrtc.on('videoRemoved', (video, peer) => {
+        // eslint-disable-next-line no-console
+        console.log('videoRemoved');
+
+        //remove room name from database
+        if (createNewRoom == false) {
+            alert('speaker was leaveing');
+            window.location.href = '/LAP/liveRoomList';
+        }
+
+    });
+
+    webrtc.on('connectionReady', function (sessionId) {
+        // ...
+        console.log('connectionReady');
+        // console.log(sessionId);
+        webrtc.joinRoom(roomJoinID);
+
+        if (createNewRoom == true) {
+            $('#localVideos').empty();
+            var insertStr = `<video id="localVideo" class="localVideo_class"></video>`;
+            $('#localVideos').append(insertStr);
+            webrtc.startLocalVideo();
+        } else {
+
+        }
+        // var str = `joined room ${roomName}`;
+        // console.log(str);
+    })
+
+    webrtc.on('joinedRoom', function (roomName) {
+        // ...
+        console.log('joinedRoom 1 ');
+        console.log(roomName);
+    })
+
+    $(document).on('click', '#leaveRoomBtn', function () {
+        // if( createNewRoom == true ) {
+        if (true) {
+            //get userID
+            var user = firebase.auth().currentUser;
+
+            // User is signed in.
+            var name = user.displayName;
+            var uid = user.uid;
+
+            // console.log(name);
+            // console.log(uid);
+
+            console.log(roomIndex);
+
+            // 
+            $.ajax({
+                url: window.location.href,
+                data: { 'closeRoom': true, 'name': name, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+
+                }
+            });
+        } else {
+            window.location.href = '/LAP/liveRoomList';
+        }
+
+    });
+
+    // var commentsRef = firebase.database().ref('rooms/' + roomName);
+    // commentsRef.on('child_removed', function(data) {
+    //     console.log('child_removed');
+    //     console.log(data.key);
+
+    // });
+
+
+
+</script>
+
+</html>
