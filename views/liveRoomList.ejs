@@ -109,10 +109,13 @@
     }
 
     $(document).ready(function () {
-        console.log('ready');
+        var user = firebase.auth().currentUser;
+        if( !user ) {
+            window.location.href = '/LAP/notLogin';
+        } 
+        
         console.log(roomList);
         renderRoomListCard();
-
     });
 
     $(document).on('click', '#createRoomModal_createBtn', function(){

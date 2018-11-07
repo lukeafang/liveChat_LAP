@@ -130,7 +130,11 @@
 
     $(document).ready(function () {
         // console.log(roomName);
-
+        var user = firebase.auth().currentUser;
+        if( !user ) {
+            window.location.href = '/LAP/notLogin';
+        }   
+       
         $('#roomName').text(roomName);
 
 
@@ -147,15 +151,12 @@
 
         // $('.remoteVideos_class').attr('id', id);
 
-
         var insertStr = '';
         insertStr = `<div id="${id}" class="remoteVideo_class">`;
         insertStr += `</div>`;
         $('#remoteVideos').append(insertStr);
 
         webrtc.startLocalVideo();
-
-
     });
 
     // Remote video was added
@@ -166,7 +167,25 @@
         //remove room name from database
         if (createNewRoom == false) {
             alert('speaker was leaveing');
-            window.location.href = '/LAP/liveRoomList';
+
+            var user = firebase.auth().currentUser;
+            // User is signed in.
+            var name = user.displayName;
+            var uid = user.uid;
+            
+            $.ajax({
+                url: window.location.href,
+                data: { 'closeRoomIfNot': true, 'name': name, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+                }
+            });
         }
 
     });

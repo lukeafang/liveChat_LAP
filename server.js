@@ -39,6 +39,7 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
     extended: true
 }));
 
+
 //DashBoard
 app.get('/', (req, res) => {
     res.redirect('/LAP');
@@ -82,7 +83,7 @@ app.get(root + '/liveRoom/:roomIndex', (req, res) => {
     var db = firebase_admin.database();
     var ref = db.ref("rooms/" + roomIndex);
     ref.once("value", function (room) {
-        console.log(room.val());
+        // console.log(room.val());
         res.render('liveRoom_test.ejs', { createNewRoom: false, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
     });
     
@@ -108,10 +109,15 @@ app.post(root + '/liveRoom/:roomIndex', (req, res) => {
         var ref = db.ref("rooms/" + roomIndex);
 
         ref.once("value", function (room) {
-            console.log(room.val());
+            // console.log(room.val());
             res.render('liveRoom_test.ejs', { createNewRoom: true, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
         });
     } else if ( req.body.closeRoom )  {
+        var db = firebase_admin.database();
+        var roomRef = db.ref('rooms/' + req.body.roomIndex);
+        roomRef.remove();
+        res.send('deleted');
+    } else if( req.body.closeRoomIfNot ) {
         var db = firebase_admin.database();
         var roomRef = db.ref('rooms/' + req.body.roomIndex);
         roomRef.remove();
@@ -174,7 +180,7 @@ app.post(root + '/liveRoomList', (req, res) => {
             res.send(roomIndex.toString());
 
         });
-    }
+    } 
 
 });
 
