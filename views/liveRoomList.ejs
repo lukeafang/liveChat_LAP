@@ -108,12 +108,16 @@
         $('#roomListContext').append(insertStr);
     }
 
-    $(document).ready(function () {
-        var user = firebase.auth().currentUser;
-        if( !user ) {
+    firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+            // User is signed in.
+        } else {
+            // No user is signed in.
             window.location.href = '/LAP/notLogin';
-        } 
-        
+        }
+    });
+
+    $(document).ready(function () {
         console.log(roomList);
         renderRoomListCard();
     });

@@ -107,6 +107,15 @@
 </body>
 
 <script>
+    firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+            // User is signed in.
+        } else {
+            // No user is signed in.
+            window.location.href = '/LAP/notLogin';
+        }
+    });
+
     var webrtc = new SimpleWebRTC({
         // the id/element dom element that will hold "our" video
         localVideoEl: 'localVideo',
@@ -129,15 +138,7 @@
     });
 
     $(document).ready(function () {
-        // console.log(roomName);
-        var user = firebase.auth().currentUser;
-        if( !user ) {
-            window.location.href = '/LAP/notLogin';
-        }   
-       
         $('#roomName').text(roomName);
-
-
     });
 
     // Remote video was added
@@ -249,6 +250,16 @@
             window.location.href = '/LAP/liveRoomList';
         }
 
+    });
+
+    // Receive message from remote user
+    webrtc.connection.on('message', (data) => {
+      if (data.type === 'chat') {
+        const message = data.payload;
+        console.log(message);
+        // messages.push(message);
+        // updateChatMessages();
+      }
     });
 
     // var commentsRef = firebase.database().ref('rooms/' + roomName);
