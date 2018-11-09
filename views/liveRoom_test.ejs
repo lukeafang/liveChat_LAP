@@ -42,6 +42,10 @@
         #chat-action {
             height: 400px;
         }
+
+
+        
+
     </style>
 </head>
 <script>
@@ -59,9 +63,6 @@
     <% include nav %>
 
     <div class="container">
-
-
-
         <button class="btn btn-danger" style="margin-bottom:5px" id="leaveRoomBtn">Leave <i class="fas fa-sign-out-alt"></i></button>
         <div class="row">
             <div class="col-sm-5">
@@ -80,13 +81,13 @@
                     Messages
                 </div>
                 <div id="chat-content">
-
                 </div>
-                <div class="input-group" style="width:95%">
+                <div class="input-group" style="width:98%">
                     <div class="input-group-prepend">
                         <span class="input-group-text">Message: </span>
                     </div>
-                    <textarea class="form-control" aria-label="With textarea" rows="1"></textarea>
+                    <textarea class="form-control" aria-label="With textarea" rows="1" id="inputMessageText"></textarea>
+                    <button type="button" class="btn btn-primary" style="margin-left: 5px" id="sendMessageBtn">Send</button>
                 </div>
             </div>
             <div class="col">
@@ -96,6 +97,7 @@
             </div>
         </div>
     </div>
+
 
     <% include footer %>
 
@@ -107,6 +109,17 @@
 </body>
 
 <script>
+
+
+    firebase.auth().onAuthStateChanged(function (user) {
+        if (user) {
+            // User is signed in.
+        } else {
+            // No user is signed in.
+            window.location.href = '/LAP/notLogin';
+        }
+    });
+
     var webrtc = new SimpleWebRTC({
         // the id/element dom element that will hold "our" video
         localVideoEl: 'localVideo',
@@ -129,11 +142,10 @@
     });
 
     $(document).ready(function () {
-        // console.log(roomName);
-
         $('#roomName').text(roomName);
-
-
+        if( !createNewRoom ) {
+            $('#leaveRoomBtn').hide();
+        }   
     });
 
     // Remote video was added
@@ -141,13 +153,10 @@
         // eslint-disable-next-line no-console
         console.log('videoAdded');
 
-
         const id = webrtc.getDomId(peer);
         console.log(id);
 
         // $('.remoteVideos_class').attr('id', id);
-
-
         var insertStr = '';
         insertStr = `<div id="${id}" class="remoteVideo_class">`;
         insertStr += `</div>`;
@@ -155,6 +164,7 @@
 
         webrtc.startLocalVideo();
 
+        postMessage('', 'joined');
 
     });
 
@@ -166,7 +176,25 @@
         //remove room name from database
         if (createNewRoom == false) {
             alert('speaker was leaveing');
-            window.location.href = '/LAP/liveRoomList';
+
+            var user = firebase.auth().currentUser;
+            // User is signed in.
+            var name = user.displayName;
+            var uid = user.uid;
+
+            $.ajax({
+                url: window.location.href,
+                data: { 'closeRoomIfNot': true, 'name': name, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+                }
+            });
         }
 
     });
@@ -189,10 +217,43 @@
         // console.log(str);
     })
 
+
     webrtc.on('joinedRoom', function (roomName) {
         // ...
         console.log('joinedRoom 1 ');
         console.log(roomName);
+        var user = firebase.auth().currentUser;
+        if( user == null ) {
+            console.log('user is null');
+        }
+    })
+
+    webrtc.on('leftRoom', function (roomName) {
+        var user = firebase.auth().currentUser;
+        if( user == null ) {
+            console.log('leftRoom user is null');
+        } else {
+            console.log('leftRoom user not null');
+            postMessage('','lefted');
+        }
+
+        // if( !createNewRoom ) {
+        //     // User is signed in.
+        //     var message = `${speakerName} joined room.`;
+        //     postMessage(message);
+        // }
+    })
+
+    webrtc.on('createdPeer', function (peer) {
+        // ...
+        console.log('createdPeer 1 ');
+        console.log(peer);
+        var user = firebase.auth().currentUser;
+        if( user == null ) {
+            console.log('createdPeer user is null');
+        } else {
+            console.log('createdPeer user not null');
+        }
     })
 
     $(document).on('click', '#leaveRoomBtn', function () {
@@ -205,12 +266,8 @@
             var name = user.displayName;
             var uid = user.uid;
 
-            // console.log(name);
-            // console.log(uid);
-
             console.log(roomIndex);
 
-            // 
             $.ajax({
                 url: window.location.href,
                 data: { 'closeRoom': true, 'name': name, 'uid': uid, 'roomIndex': roomIndex },
@@ -232,13 +289,123 @@
 
     });
 
-    // var commentsRef = firebase.database().ref('rooms/' + roomName);
-    // commentsRef.on('child_removed', function(data) {
-    //     console.log('child_removed');
-    //     console.log(data.key);
+    // Receive message from remote user
+    webrtc.connection.on('message', (data) => {
+        if (data.type === 'chat') {
+            const message = data.payload;
+            updateChatContext(message);
+        }
+    });
 
-    // });
+    $('#sendMessageBtn').on('click', () => {
+        var message = $('#inputMessageText').val();
+        if( message.length <= 0 ) {
+            return;
+        }
+        postMessage(message, 'msg');
+    });
 
+    $('#inputMessageText').on('keyup', (event) => {
+        if (event.keyCode === 13) {
+            var message = $('#inputMessageText').val();
+            if( message.length <= 1 ) {
+                $('#inputMessageText').val('');
+                return;
+            }
+            postMessage(message, 'msg');
+        }
+    });
+
+    function postMessage(message, messageType) {
+        if( messageType == 'msg' ) {
+            // Send to all peers
+            var user = firebase.auth().currentUser;
+            var name = '';
+            if( user != null ) {
+                name = user.displayName;
+            }
+
+            const chatMessage = {
+                type: messageType,
+                username: name,
+                message,
+                postTime: new Date().toLocaleString('en-GB'),
+            };
+            webrtc.sendToAll('chat', chatMessage);
+            $('#inputMessageText').val('');
+            updateChatContext(chatMessage);            
+        } else if ( messageType == 'joined' ){
+            var user = firebase.auth().currentUser;
+            var name = '';
+            if( user != null ) {
+                name = user.displayName;
+            }
+            var msg = `${name} joined room.`;
+
+            const chatMessage = {
+                type: messageType,
+                username: name,
+                message: msg,
+                postTime: new Date().toLocaleString('en-GB'),
+            };
+            webrtc.sendToAll('chat', chatMessage);
+            updateChatContext(chatMessage);            
+        } else if ( messageType == 'lefted' ){
+            var user = firebase.auth().currentUser;
+            var name = '';
+            if( user != null ) {
+                name = user.displayName;
+            }
+            var msg = `${name} lefted room.`;
+
+            const chatMessage = {
+                type: messageType,
+                username: name,
+                message: msg,
+                postTime: new Date().toLocaleString('en-GB'),
+            };            
+
+            webrtc.sendToAll('chat', chatMessage);
+            updateChatContext(chatMessage);
+        } else {
+            return;
+        }
+
+ 
+    }
+
+    function updateChatContext(message) {
+        if( message.type == 'msg' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="red">${message.username}: </font>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        } else if( message.type == 'joined' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        } else if( message.type == 'lefted' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        }
+           
+    }
 
 
 </script>
