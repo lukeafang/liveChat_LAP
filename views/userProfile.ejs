@@ -1,0 +1,151 @@
+<!-- view/userProfile.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>UserProfile</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+
+    <!-- Custom styles for navbar page -->
+    <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
+    <link href="./assets/css/nav.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css" integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns"
+        crossorigin="anonymous">
+</head>
+<script>
+    var habits = <%- habits %>;
+    console.log(habits);
+</script>
+
+<body>
+    <% include nav %>
+
+    <div class="container">
+        <h1 style="text-align: center">User Information</h1><br>
+        <div class="form-group row">
+            <label for="displayName" class="col-sm-2 col-form-label">Display Name</label>
+            <div class="col-sm-5">
+                <input class="form-control" id="displayName" placeholder="Display Name">
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-sm-2">Habits</div>
+            <div class="col-sm-10" id="habitList">
+            </div>
+        </div>
+        <br>
+        <div class="form-group row">
+            <div class="col-sm-10">
+                <button id="saveChangeBtn" class="btn btn-primary">Save Change</button>
+            </div>
+        </div>
+    </div>
+
+
+    <% include footer %>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+
+    <!-- <script type="text/javascript" src="assets/js/jquery.redirect.js"></script> -->
+</body>
+
+<script>
+    firebase.auth().onAuthStateChanged(function (user) {
+        if (user) {
+            // User is signed in.
+            var uid = user.uid;
+            // get user information from db and render on the page
+            var db_path = `users/${uid}/habits`;
+            var ref = firebase.database().ref(db_path);     
+            ref.once("value", function (habitList) {
+                var count = 0;
+                habitList.forEach(function(habit) {
+                    if( habit.val() == 1 ) {
+                        // console.log(habit.key);
+                        var itemID = `#habitchk_${count}`;
+                        $(itemID).prop('checked', true);
+                    }
+                    count = count + 1;
+                });              
+            });
+
+            firebase.database().ref('/users/' + uid + '/displayName').once('value').then(function(name) {
+                itemID = `#displayName`;
+                $(itemID).val(name.val());
+            });
+        } else {
+            // No user is signed in.
+            // window.location.href = '/LAP/notLogin';
+        }
+    });
+
+    $(document).ready(function () {
+        initial();
+    });
+
+    function initial(){
+        var itemID = '';
+        var insertStr = '';
+
+        insertStr = '';
+        for(var i=0;i<habits.length;i++) {
+            insertStr += `<div class="form-check form-check-inline">`;
+            insertStr += `<input class="form-check-input" type="checkbox" id="habitchk_${i}" value="option1">`;
+            insertStr += `<label class="form-check-label" for="habitchk_${i}">${habits[i]}</label>`;
+            insertStr += `</div>`;
+        }
+        itemID = `#habitList`;
+        $(itemID).append(insertStr);
+
+    }
+
+    $(document).on('click', '#saveChangeBtn', function () {
+        console.log('clicked');
+
+        var displayName = '';
+        displayName = $('#displayName').val();
+
+        var itemID = '';
+        //check boxs
+        var selectHabits = [];
+        for(var i=0;i<habits.length;i++) {
+            itemID = `#habitchk_${i}`;
+            if( $(itemID).is(':checked') ) {
+                selectHabits.push(habits[i]);
+            }
+        }
+
+        var user = firebase.auth().currentUser;
+        var uid = user.uid;
+        $.ajax({
+            url: window.location.href,
+            data: { 'updateProfile': true, 'displayName': displayName, 'uid': uid, 'selectHabits': selectHabits },
+            type: 'POST',
+            success: function (data, textStatus, jqXHR) {
+                //success create, redirect
+                //get roomName
+                console.log(data);
+                //redriect to room list page
+                // window.location.href = '/LAP/';
+                alert('updated');
+            }
+        });
+        
+    });
+
+
+</script>
+
+</html>
