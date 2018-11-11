@@ -62,18 +62,71 @@ app.get(root + '/signup', (req, res) => {
     res.render('signup.ejs');
 });
 
-app.get(root + '/liveRoom', (req, res) => {
-    // var userinfo = getUserInfo();
-    // // res.render('signout.ejs');
-    // var database = firebase.database();
-    // var userId = userinfo.uid;
-    // var roomID = 1;
-    // firebase.database().ref('chats/' + roomID).set({
-    //     username: '123',
-    //     email: '456',
-    //   });
+app.get(root + '/userinfo', (req, res) => {
+    // console.log(randomRoomName);
+    var db = firebase_admin.database();    
+    // As an admin, the app has access to read and write all data, regardless of Security Rules
+    var roomRef = db.ref('habit/');
+    roomRef.once("value", function (habitList) {
+        var habits = [];
+        var count = 0;
+        habitList.forEach(function(habit) {
+            habits.push(habit.key);
+        });
+         
+        res.render('userProfile.ejs', {habits: JSON.stringify(habits)});
+    });    
+  
+});
 
-    // var starCountRef = firebase.database().ref('users/' + userId);
+app.post(root + '/userinfo', (req, res) => {
+    if( req.body.updateProfile == "true" ) {
+        console.log(req.body.displayName); 
+        var db = firebase_admin.database(); 
+        db.ref('users/' + req.body.uid).set({
+            displayName: req.body.displayName,
+        });
+        var habitList = req.body.selectHabits;
+        var bfood = 0;
+        var bgame = 0;
+        var bmovie = 0;
+        var bsport = 0;
+        var btravel = 0;
+        for(var i=0;i<habitList.length;i++) {
+            var habit = habitList[i];
+            switch(habit) {
+                case 'food':    bfood = 1;
+                break;
+                case 'game':    bgame = 1;
+                break;
+                case 'movie':    bmovie = 1;
+                break;
+                case 'sport':    bsport = 1;
+                break;
+                case 'travel':    btravel = 1;
+                break;
+                default:
+                break;
+            }
+        }
+
+        var postData = {
+            food: bfood,
+            game: bgame,
+            movie: bmovie,
+            sport: bsport,
+            travel: btravel,
+        };
+
+        var db_path = `users/${req.body.uid}/habits`;
+        var ref = db.ref(db_path);        
+        ref.set(postData);
+        res.send('updated');
+    }
+});
+
+
+app.get(root + '/liveRoom', (req, res) => {
     res.redirect('/LAP');
 });
 
@@ -84,20 +137,8 @@ app.get(root + '/liveRoom/:roomIndex', (req, res) => {
     var ref = db.ref("rooms/" + roomIndex);
     ref.once("value", function (room) {
         // console.log(room.val());
-        res.render('liveRoom_test.ejs', { createNewRoom: false, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
+        res.render('liveRoom.ejs', { createNewRoom: false, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
     });
-    
-    // var userinfo = getUserInfo();
-    // // res.render('signout.ejs');
-    // var database = firebase.database();
-    // var userId = userinfo.uid;
-    // var roomID = 1;
-    // firebase.database().ref('chats/' + roomID).set({
-    //     username: '123',
-    //     email: '456',
-    //   });
-
-    // var starCountRef = firebase.database().ref('users/' + userId);
 });
 
 app.post(root + '/liveRoom/:roomIndex', (req, res) => {
@@ -110,7 +151,7 @@ app.post(root + '/liveRoom/:roomIndex', (req, res) => {
 
         ref.once("value", function (room) {
             // console.log(room.val());
-            res.render('liveRoom_test.ejs', { createNewRoom: true, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
+            res.render('liveRoom.ejs', { createNewRoom: true, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
         });
     } else if ( req.body.closeRoom )  {
         var db = firebase_admin.database();
@@ -140,7 +181,9 @@ app.get(root + '/liveRoomList', (req, res) => {
                 roomIndex: room.key,
                 roomName: room.val().roomName,
                 roomJoinID: room.val().roomJoinID,
-                speakerName: room.val().speakerName
+                speakerName: room.val().speakerName,
+                roomDesc: room.val().roomDesc,
+                roomTopic: room.val().roomTopic
             }
             roomObjectList.push(roomObject);
             // console.log(room.val().speakerName);     
@@ -155,6 +198,8 @@ app.post(root + '/liveRoomList', (req, res) => {
         var userName = req.body.name;
         var uid = req.body.uid;
         var roomName = req.body.roomName;
+        var roomDesc = req.body.roomDesc;
+        var roomTopic = req.body.topic;
         //generate random string as room name
         var randomRoomID = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         // console.log(randomRoomName);
@@ -176,6 +221,8 @@ app.post(root + '/liveRoomList', (req, res) => {
                 roomJoinID: randomRoomID,
                 speakerName: userName,
                 speakerid: uid,
+                roomDesc: roomDesc,
+                roomTopic: roomTopic
             });  
             res.send(roomIndex.toString());
 

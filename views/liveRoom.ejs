@@ -1,10 +1,13 @@
+<!-- view/dashboard.ejs -->
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Room</title>
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
@@ -12,136 +15,373 @@
 
     <!-- Custom styles for navbar page -->
     <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
-    <link href="./assets/css/nav.css" rel="stylesheet">
+    <link href="../assets/css/nav.css" rel="stylesheet">
+
+    <script src="/scripts/simplewebrtc/out/simplewebrtc-with-adapter.bundle.js"></script>
+
 
     <link rel="stylesheet" href="/scripts/semantic-ui-css/semantic.min.css">
-    <title>SimpleWebRTC Demo</title>
-    <style>
-        html { margin-top: 20px; }
-        #chat-content { height: 180px;  overflow-y: scroll; }
-  </style>
-</head>
 
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.2/css/all.css" integrity="sha384-/rXc/GQVaYpyDdyxK+ecHPVYJSN9bmVFBvjA/9eOB+pb3F2w2N6fc5qB9Ew5yIns"
+        crossorigin="anonymous">
+
+    <style>
+        #remoteVideos video {
+            height: 300px;
+        }
+
+        #localVideo {
+            height: 300px;
+        }
+
+        #chat-content {
+            height: 300px;
+            overflow-y: scroll;
+        }
+
+        #chat-action {
+            height: 400px;
+        }
+
+
+        
+
+    </style>
+</head>
+<script>
+    var joined= false;
+    var roomIndex = '<%- roomIndex %>';
+    var roomName = '<%- roomName %>';
+    var roomJoinID = '<%- roomJoinID %>';
+    var speakerName = '<%- speakerName %>';
+    var createNewRoom = <%- createNewRoom %>;
+    // console.log(createNewRoom);
+    // var autoEnableCamera = createNewRoom;
+    var localMedia = { audio: createNewRoom, video: createNewRoom };
+    var displayName = 'unknown';
+    var uid = '000';
+</script>
 
 <body>
     <% include nav %>
 
-    <div class="ui container">
-        <h1 class="ui header">Simple WebRTC Messenger</h1>
-        <hr>
-        <div class="ui two column stackable grid">
-            <div class="ui ten wide column">
-                <div class="ui segment">
-
-                    <!-- Chat Room Form -->
-                    <div class="ui form">
-                        <div class="fields">
-                            <div class="field">
-                                <label>User Name</label>
-                                <input type="text" placeholder="Enter user name" id="username" name="username">
-                            </div>
-                            <div class="field">
-                                <label>Room</label>
-                                <input type="text" placeholder="Enter room name" id="roomName" name="roomName">
-                            </div>
-                        </div>
-                        <br>
-                        <div class="ui buttons">
-                            <div id="create-btn" class="ui submit orange button">Create Room</div>
-                            <div class="or"></div>
-                            <div id="join-btn" class="ui submit green button">Join Room</div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Room Messages -->
-                    <div id="chat"></div>
+    <div class="container">
+        <button class="btn btn-danger" style="margin-bottom:5px" id="leaveRoomBtn">Leave <i class="fas fa-sign-out-alt"></i></button>
+        <div class="row">
+            <div class="col-sm-5">
+                <div class="alert alert-primary text-center" role="alert">
+                    Room Name: <p id="roomName"></p>
+                </div>
+                <div id="localVideos">
+                    <!-- <video id="localVideo" class="localVideo_class"></video> -->
+                </div>
+                <div id="remoteVideos">
                 </div>
             </div>
 
-            <!-- Local Camera -->
-            <div class="ui six wide column">
-                <img id="local-image" class="ui large image" src="assets/img/blank.png">
-                <video id="local-video" class="ui large image" autoplay></video>
-                <h4 class="ui center aligned header" style="margin:0;">
-                    Local Camera
-                </h4>
+            <div class="col-sm-5">
+                <div class="alert alert-secondary text-center" role="alert">
+                    Messages
+                </div>
+                <div id="chat-content">
+                </div>
+                <div class="input-group" style="width:98%">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Message: </span>
+                    </div>
+                    <textarea class="form-control" aria-label="With textarea" rows="1" id="inputMessageText"></textarea>
+                    <button type="button" class="btn btn-primary" style="margin-left: 5px" id="sendMessageBtn">Send</button>
+                </div>
             </div>
-        </div>
-
-        <!-- Remote Cameras -->
-        <h3 class="ui center aligned header">Remote Cameras</h3>
-        <div id="remote-videos" class="ui stackable grid">
-            <div class="four wide column">
-                <img class="ui centered medium image" src="assets/img/blank.png">
-            </div>
-            <div class="four wide column">
-                <img class="ui centered medium image" src="assets/img/blank.png">
-            </div>
-            <div class="four wide column">
-                <img class="ui centered medium image" src="assets/img/blank.png">
-            </div>
-            <div class="four wide column">
-                <img class="ui centered medium image" src="assets/img/blank.png">
+            <div class="col">
+                <div class="alert alert-success text-center" role="alert">
+                    items
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- TEMPLATES -->
-    <!-- Remote Video Template -->
-    <script id="remote-video-template" type="text/x-handlebars-template">
-    <div id="{{ id }}" class="four wide column">
-      <img class="ui centered medium image" src="images/image.png">
-    </div>
-  </script>
-
-    <!-- Chat Content Template -->
-    <script id="chat-content-template" type="text/x-handlebars-template">
-   {{#each messages}}
-    <div class="event">
-      <div class="label">
-        <i class="icon blue user"></i>
-      </div>
-      <div class="content">
-        <div class="summary">
-          <a href="#"> {{ username }}</a> posted on
-          <div class="date">
-            {{ postedOn }}
-          </div>
-        </div>
-        <div class="extra text">
-          {{ message }}
-        </div>
-      </div>
-    </div>
-  {{/each}}
-  </script>
-
-    <!-- Chat Template -->
-    <script id="chat-template" type="text/x-handlebars-template">
-    <h3 class="ui orange header">Room ID -> <strong>{{ room }}</strong></h3>
-    <hr>
-    <div id="chat-content" class="ui feed"> </div>
-    <hr>
-    <div class="ui form">
-      <div class="ui field">
-        <label>Post Message</label>
-        <textarea id="post-message" name="post-message" rows="1"></textarea>
-      </div>
-      <div id="post-btn" class="ui primary submit button">Send</div>
-    </div>
-  </script>
 
     <% include footer %>
 
-    <!-- Scripts -->
-    <script src="/scripts/jquery/dist/jquery.min.js"></script>
-    <script src="/scripts/semantic-ui-css/semantic.min.js"></script>
-    <script src="/scripts/handlebars/dist/handlebars.min.js "></script>
-    <script src="/scripts/simplewebrtc/out/simplewebrtc-with-adapter.bundle.js"></script>
-
-    
-
-    <script src="assets/js/liveRoom.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
 </body>
+
+<script>
+    firebase.auth().onAuthStateChanged(function (user) {
+        if (user) {
+            var tempUid = user.uid;
+            firebase.database().ref('/users/' + tempUid + '/displayName').once('value').then(function(name) {
+                displayName = name.val();
+                postMessage('', 'joined');
+            });          
+        } else {
+            // No user is signed in.
+            window.location.href = '/LAP/notLogin';
+        }
+    });
+
+    var webrtc = new SimpleWebRTC({
+        // the id/element dom element that will hold "our" video
+        localVideoEl: 'localVideo',
+        // the id/element dom element that will hold remote videos
+        remoteVideosEl: 'remoteVideos',
+        // immediately ask for camera access
+        autoRequestMedia: false,
+        media: localMedia
+
+    });
+
+    // we have to wait until it's ready
+    webrtc.on('readyToCall', function () {
+        console.log('readyToCall');
+
+        // you can name it anything
+        // webrtc.joinRoom(roomName);
+        // var str = `joined room ${roomName}`;
+        // console.log(str);
+    });
+
+    $(document).ready(function () {
+        $('#roomName').text(roomName);
+        if( !createNewRoom ) {
+            $('#leaveRoomBtn').hide();
+        }   
+    });
+
+    // Remote video was added
+    webrtc.on('videoAdded', (video, peer) => {
+        // eslint-disable-next-line no-console
+        console.log('videoAdded');
+
+        const id = webrtc.getDomId(peer);
+        console.log(id);
+
+        // $('.remoteVideos_class').attr('id', id);
+        var insertStr = '';
+        insertStr = `<div id="${id}" class="remoteVideo_class">`;
+        insertStr += `</div>`;
+        $('#remoteVideos').append(insertStr);
+
+        webrtc.startLocalVideo();
+
+        joined = true;
+    });
+
+    // Remote video was added
+    webrtc.on('videoRemoved', (video, peer) => {
+        // eslint-disable-next-line no-console
+        console.log('videoRemoved');
+
+        //remove room name from database
+        if (createNewRoom == false) {
+            alert('speaker was leaveing');
+
+            $.ajax({
+                url: window.location.href,
+                data: { 'closeRoomIfNot': true, 'name': displayName, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+                }
+            });
+        }
+
+    });
+
+    webrtc.on('connectionReady', function (sessionId) {
+        webrtc.joinRoom(roomJoinID);
+
+        if (createNewRoom == true) {
+            $('#localVideos').empty();
+            var insertStr = `<video id="localVideo" class="localVideo_class"></video>`;
+            $('#localVideos').append(insertStr);
+            webrtc.startLocalVideo();
+        } else {
+
+        }
+    })
+
+
+    webrtc.on('joinedRoom', function (roomName) {
+        var user = firebase.auth().currentUser;
+        if( user == null ) {
+            console.log('joinedRoom user is null');
+        }
+    })
+
+    webrtc.on('leftRoom', function (roomName) {
+        var user = firebase.auth().currentUser;
+        if( user == null ) {
+            console.log('leftRoom user is null');
+            postMessage('','lefted');
+        } else {
+            console.log('leftRoom user not null');
+            postMessage('','lefted');
+        }
+    })
+
+    webrtc.on('createdPeer', function (peer) {
+        // ...
+        // console.log('createdPeer 1 ');
+        // console.log(peer);
+        // var user = firebase.auth().currentUser;
+        // if( user == null ) {
+        //     console.log('createdPeer user is null');
+        // } else {
+        //     console.log('createdPeer user not null');
+        // }
+    })
+
+    $(document).on('click', '#leaveRoomBtn', function () {
+        // if( createNewRoom == true ) {
+        if (true) {
+            console.log(roomIndex);
+
+            $.ajax({
+                url: window.location.href,
+                data: { 'closeRoom': true, 'name': displayName, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+
+                }
+            });
+        } else {
+            window.location.href = '/LAP/liveRoomList';
+        }
+
+    });
+
+    // Receive message from remote user
+    webrtc.connection.on('message', (data) => {
+        if (data.type === 'chat') {
+            const message = data.payload;
+            updateChatContext(message);
+        }
+    });
+
+    $('#sendMessageBtn').on('click', () => {
+        var message = $('#inputMessageText').val();
+        if( message.length <= 0 ) {
+            return;
+        }
+        postMessage(message, 'msg');
+    });
+
+    $('#inputMessageText').on('keyup', (event) => {
+        if (event.keyCode === 13) {
+            var message = $('#inputMessageText').val();
+            if( message.length <= 1 ) {
+                $('#inputMessageText').val('');
+                return;
+            }
+            postMessage(message, 'msg');
+        }
+    });
+
+    function postMessage(message, messageType) {
+        if( messageType == 'msg' ) {
+            // Send to all peers
+            const chatMessage = {
+                type: messageType,
+                username: displayName,
+                message,
+                postTime: new Date().toLocaleString('en-GB'),
+            };
+            webrtc.sendToAll('chat', chatMessage);
+            $('#inputMessageText').val('');
+            updateChatContext(chatMessage);            
+        } else if ( messageType == 'joined' ){
+            console.log(displayName);
+            var msg = `${displayName} joined room.`;
+
+            const chatMessage = {
+                type: messageType,
+                username: displayName,
+                message: msg,
+                postTime: new Date().toLocaleString('en-GB'),
+            };
+            webrtc.sendToAll('chat', chatMessage);
+            updateChatContext(chatMessage);            
+        } else if ( messageType == 'lefted' ){
+            var msg = `${displayName} lefted room.`;
+
+            const chatMessage = {
+                type: messageType,
+                username: displayName,
+                message: msg,
+                postTime: new Date().toLocaleString('en-GB'),
+            };            
+
+            webrtc.sendToAll('chat', chatMessage);
+            updateChatContext(chatMessage);
+        } else {
+            return;
+        }
+
+ 
+    }
+
+    function updateChatContext(message) {
+        if( message.type == 'msg' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="red">${message.username}: </font>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        } else if( message.type == 'joined' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        } else if( message.type == 'lefted' ) {
+            var itemID = '#chat-content';
+            var insertStr = '';
+            insertStr = `<div class="row_message">`;
+            insertStr += `<i class="icon blue user"></i>`;
+            insertStr += `<font color="black">${message.message}</font>`;
+            insertStr += `<font color="gray" align="right">${message.postTime}</font>`;
+            insertStr += `</div>`;  
+            $(itemID).append(insertStr);  
+        }
+           
+    }
+
+
+    $(window).on("unload", function(e) {
+        alert("call");
+        console.log("this will be triggered");
+    });
+
+    // $(window).on("load", function(e) {
+    //     alert("load");
+    //     console.log("this will be triggered");
+    // });
+
+</script>
 
 </html>

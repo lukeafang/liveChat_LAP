@@ -41,6 +41,17 @@
                                 <label>Room Name:</label>
                                 <input id="createRoomModal_roomName" type="text" class="form-control">
                             </div>
+                            <label>Select Topic:</label><br>
+                            <div id="modal_topic_select">
+                            </div><br>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Description: </span>
+                                </div>
+                                <textarea class="form-control" aria-label="With textarea" id="roomDesc"></textarea>
+                            </div>
+
+
                         </form>
                     </div>
                     <div class="modal-footer">
@@ -98,7 +109,8 @@
             insertStr += `<div class="card">`;
             insertStr += `<div class="card-body">`;
             insertStr += `<h5 class="card-title">${room.roomName}</h5>`;
-            insertStr += `<p class="card-text">Description of Room "${room.roomName}".<br> Room creater: ${room.speakerName}</p>`;
+            insertStr += `<p class="card-text">Topic: ${room.roomTopic}</p>`;
+            insertStr += `<p class="card-text">Description: ${room.roomDesc}.<br> Room creater: ${room.speakerName}</p>`;
             insertStr += `<a href="/LAP/liveRoom/${room.roomIndex}" class="btn btn-success"><i class="fas fa-sign-in-alt"></i></a>`;
             insertStr += `</div>`;
             insertStr += `</div>`;
@@ -108,33 +120,32 @@
         $('#roomListContext').append(insertStr);
     }
 
-    firebase.auth().onAuthStateChanged(function(user) {
-        if (user) {
-            // User is signed in.
-        } else {
-            // No user is signed in.
-            window.location.href = '/LAP/notLogin';
-        }
-    });
+    // firebase.auth().onAuthStateChanged(function (user) {
+    //     if (user) {
+    //         // User is signed in.
+    //     } else {
+    //         // No user is signed in.
+    //         window.location.href = '/LAP/notLogin';
+    //     }
+    // });
 
     $(document).ready(function () {
         console.log(roomList);
         renderRoomListCard();
     });
 
-    $(document).on('click', '#createRoomModal_createBtn', function(){
+    $(document).on('click', '#createRoomModal_createBtn', function () {
         //get room name
         var roomName = $('#createRoomModal_roomName').val();
 
-        //get userID
-        var user = firebase.auth().currentUser;
-        // User is signed in.
-        var name = user.displayName;
-        var uid = user.uid;
-        // 
+        // get habbit select
+        var topic = $('input[name=inlineRadioOptions]:checked').val();
+        
+        var desc = $('#roomDesc').val();
+        
         $.ajax({
             url: window.location.href,
-            data: { 'createNewRoom': true, 'name': name, 'uid': uid, 'roomName': roomName },
+            data: { 'createNewRoom': true, 'name': displayName, 'uid': uid, 'roomName': roomName, 'topic':topic, 'roomDesc':desc },
             type: 'POST',
             success: function (data, textStatus, jqXHR) {
                 //success create, redirect
@@ -150,21 +161,23 @@
     });
 
     $(document).on('click', '#createRoomBtn', function () {
+        firebase.database().ref('/habit').once('value').then(function (habitList) {
+            $('#modal_topic_select').empty();
+            insertStr = '';
+            var count = 0;
+            habitList.forEach(function (habit) {
+                insertStr += `<div class="form-check form-check-inline">`;
+                insertStr += `<input class="form-check-input" type="radio" name="inlineRadioOptions" id="habitradio_${count}" value="${habit.key}">`;
+                insertStr += `<label class="form-check-label" for="habitradio_${count}">${habit.key}</label>`;
+                insertStr += `</div>`;
+            });
+            $('#modal_topic_select').append(insertStr);
 
-        $('#createRoomModal').modal('show');
-        
+            
+
+            $('#createRoomModal').modal('show');
+        });
     });
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -42,18 +42,19 @@
     };
     firebase.initializeApp(config);
 
+    var displayName = '';
+    var uid = '';
+    var email = '';
     firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
             // User is signed in.
-            var displayName = user.displayName;
-            var email = user.email;
-            var emailVerified = user.emailVerified;
-            var photoURL = user.photoURL;
-            var isAnonymous = user.isAnonymous;
-            var uid = user.uid;
-            var providerData = user.providerData;
-            
-            updateUserInfo();
+            uid = user.uid;
+            email = user.email;
+            // get username from db
+            firebase.database().ref('/users/' + uid + '/displayName').once('value').then(function(name) {
+                displayName = name.val();
+                updateUserInfo();
+            });
         } else {
             // User is signed out.
             updateUserInfo();
@@ -68,7 +69,7 @@
         if (user) {
             // User is signed in.
             insertStr = `<a class="btn btn-sm btn-primary" href="/LAP/userinfo">`;
-            insertStr += `${user.displayName}</a>&nbsp;&nbsp;`;
+            insertStr += `${displayName}</a>&nbsp;&nbsp;`;
             insertStr += `<button id="signOutBtn" class="btn btn-sm btn-outline-secondary">Sign Out</button>`;
         } else {
             // No user is signed in.
@@ -111,11 +112,16 @@
         firebase.auth().createUserWithEmailAndPassword(email, password)
             .then(function (user) {
                 var user = firebase.auth().currentUser;
+                var uid = user.uid;
                 user.updateProfile({
                     displayName: name
                 }).then(function() {
+                    // update displayName to database
+                    firebase.database().ref('users/' + uid).set({
+                        displayName: name,
+                    });
                     // Update successful.
-                    window.location.href = "/";
+                    window.location.href = "/LAP/userinfo";
                 });
             }, function (error) {
                 // Handle Errors here.
