@@ -111,6 +111,7 @@
             insertStr += `<h5 class="card-title">${room.roomName}</h5>`;
             insertStr += `<p class="card-text">Topic: ${room.roomTopic}</p>`;
             insertStr += `<p class="card-text">Description: ${room.roomDesc}.<br> Room creater: ${room.speakerName}</p>`;
+            insertStr += `<p class="card-text">Room People: ${room.roomPeopleJoin}.</p>`;
             insertStr += `<a href="/LAP/liveRoom/${room.roomIndex}" class="btn btn-success"><i class="fas fa-sign-in-alt"></i></a>`;
             insertStr += `</div>`;
             insertStr += `</div>`;
@@ -172,8 +173,6 @@
                 insertStr += `</div>`;
             });
             $('#modal_topic_select').append(insertStr);
-
-            
 
             $('#createRoomModal').modal('show');
         });
