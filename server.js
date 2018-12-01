@@ -32,7 +32,6 @@ app.use(root, express.static(path.join(__dirname, '/views')));
 app.use('/scripts', express.static(`${__dirname}/node_modules/`));
 
 
-
 // Body parser middleware.
 app.use(bodyParser.json());			// to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
@@ -132,13 +131,22 @@ app.get(root + '/liveRoom', (req, res) => {
 
 app.get(root + '/liveRoom/:roomIndex', (req, res) => {
     var roomIndex = req.params.roomIndex;
+    var maxPeople = 3;
     //get room Info from database
     var db = firebase_admin.database();
     var ref = db.ref("rooms/" + roomIndex);
     ref.once("value", function (room) {
         // console.log(room.val());
-        res.render('liveRoom.ejs', { createNewRoom: false, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID });
-    });
+        var nPeople = room.val().roomPeopleJoin;
+        if( nPeople > maxPeople ) {
+            res.render('liveRoomFull.ejs');
+        } else {
+            nPeople = nPeople + 1;
+            ref.update({roomPeopleJoin: nPeople});
+            res.render('liveRoom.ejs', { createNewRoom: false, roomIndex: roomIndex, speakerName: room.val().speakerName, roomName: room.val().roomName, roomJoinID: room.val().roomJoinID, roomPeopleJoin: nPeople });
+     
+        }
+   });
 });
 
 app.post(root + '/liveRoom/:roomIndex', (req, res) => {
@@ -163,6 +171,16 @@ app.post(root + '/liveRoom/:roomIndex', (req, res) => {
         var roomRef = db.ref('rooms/' + req.body.roomIndex);
         roomRef.remove();
         res.send('deleted');
+    } else if( req.body.peopleLeave ) {
+        var db = firebase_admin.database();
+        var ref = db.ref('rooms/' + req.body.roomIndex);
+        ref.once("value", function (room) {
+            // console.log(room.val());
+            var nPeople = room.val().roomPeopleJoin - 1;
+            ref.update({roomPeopleJoin: nPeople});
+            res.send('leave'); 
+        });
+               
     }
 });
 
@@ -183,12 +201,12 @@ app.get(root + '/liveRoomList', (req, res) => {
                 roomJoinID: room.val().roomJoinID,
                 speakerName: room.val().speakerName,
                 roomDesc: room.val().roomDesc,
-                roomTopic: room.val().roomTopic
+                roomTopic: room.val().roomTopic,
+                roomPeopleJoin: room.val().roomPeopleJoin,
             }
             roomObjectList.push(roomObject);
             // console.log(room.val().speakerName);     
         });
-
         res.render('liveRoomList.ejs', {roomList: JSON.stringify(roomObjectList)});
     });
 });
@@ -222,7 +240,8 @@ app.post(root + '/liveRoomList', (req, res) => {
                 speakerName: userName,
                 speakerid: uid,
                 roomDesc: roomDesc,
-                roomTopic: roomTopic
+                roomTopic: roomTopic,
+                roomPeopleJoin: 1
             });  
             res.send(roomIndex.toString());
 

@@ -44,8 +44,6 @@
         }
 
 
-        
-
     </style>
 </head>
 <script>
@@ -54,7 +52,9 @@
     var roomName = '<%- roomName %>';
     var roomJoinID = '<%- roomJoinID %>';
     var speakerName = '<%- speakerName %>';
+    var roomPeopleJoin = <%- roomPeopleJoin %>;
     var createNewRoom = <%- createNewRoom %>;
+    
     // console.log(createNewRoom);
     // var autoEnableCamera = createNewRoom;
     var localMedia = { audio: createNewRoom, video: createNewRoom };
@@ -66,6 +66,7 @@
     <% include nav %>
 
     <div class="container">
+        <h5 id="nPeopleJoin"></h5>
         <button class="btn btn-danger" style="margin-bottom:5px" id="leaveRoomBtn">Leave <i class="fas fa-sign-out-alt"></i></button>
         <div class="row">
             <div class="col-sm-5">
@@ -97,6 +98,10 @@
                 <div class="alert alert-success text-center" role="alert">
                     items
                 </div>
+                <button class="btn btn-success itemBtn" id="heart_5"><i class="fa fa-heart" aria-hidden="true"></i></button>
+                <button class="btn btn-danger itemBtn" id="rocket_1"><i class="fa fa-rocket" aria-hidden="true"></i></button>
+                <button class="btn btn-danger itemBtn" id="bomb_4"><i class="fa fa-bomb" aria-hidden="true"></i></button>
+                <button class="btn btn-primary itemBtn" id="plane_2"><i class="fa fa-plane" aria-hidden="true"></i></button> 
             </div>
         </div>
     </div>
@@ -148,9 +153,12 @@
 
     $(document).ready(function () {
         $('#roomName').text(roomName);
-        if( !createNewRoom ) {
-            $('#leaveRoomBtn').hide();
-        }   
+
+        var tempStr = `Number People: ${roomPeopleJoin}`;
+        $('#nPeopleJoin').text(tempStr);
+        // if( !createNewRoom ) {
+        //     $('#leaveRoomBtn').hide();
+        // }   
     });
 
     // Remote video was added
@@ -243,8 +251,7 @@
     })
 
     $(document).on('click', '#leaveRoomBtn', function () {
-        // if( createNewRoom == true ) {
-        if (true) {
+        if( createNewRoom == true ) {
             console.log(roomIndex);
 
             $.ajax({
@@ -263,7 +270,21 @@
                 }
             });
         } else {
-            window.location.href = '/LAP/liveRoomList';
+            $.ajax({
+                url: window.location.href,
+                data: { 'peopleLeave': true, 'name': displayName, 'uid': uid, 'roomIndex': roomIndex },
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    //success create, redirect
+                    //get roomName
+                    console.log(data);
+
+                    //redriect to room list page
+                    window.location.href = '/LAP/liveRoomList';
+                    // $.redirect(url, {'speaker': true});
+
+                }
+            });
         }
 
     });
@@ -368,14 +389,15 @@
             insertStr += `</div>`;  
             $(itemID).append(insertStr);  
         }
-           
     }
 
-
-    $(window).on("unload", function(e) {
-        alert("call");
-        console.log("this will be triggered");
+    $(document).on('click', '.itemBtn', function() {
+        var id = this.id;
+        var name = id.split('_')[0];
+        var value = id.split('_')[1];
+        alert(name);
     });
+
 
     // $(window).on("load", function(e) {
     //     alert("load");
